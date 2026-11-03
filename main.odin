@@ -61,7 +61,7 @@ main :: proc() {
 	register_handlers(&router)
 
 	routed := http.router_handler(&router)
-	log.info(fmt.tprintf("Listening on http://localhost:%v", env.port))
+	log.infof("Listening on http://localhost:%v", env.port)
 
 	err := http.listen_and_serve(&server, routed, net.Endpoint { address = net.IP4_Loopback, port = env.port })
 	fmt.assertf(err == nil, "server stopped with error: %v", err)

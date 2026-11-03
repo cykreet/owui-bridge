@@ -1,17 +1,31 @@
 package owui_bridge
 
-import "core:mem"
 import "core:fmt"
 import "core:log"
 
+import waha "waha"
+
 import http "deps:odin-http"
 
-TWELVE_KB :: mem.Kilobyte * 12
+when ODIN_DEBUG {
+	@(private = "file")
+	handler_names: map[rawptr]string
+
+	register_handler_name :: proc(p: http.Handler_Proc, name: string) {
+		handler_names[rawptr(p)] = name
+	}
+}
 
 next_handler :: proc(handler: ^http.Handler, req: ^http.Request, res: ^http.Response) {
 	next, ok := handler.next.?
 	if !ok {
-		log.error("failed to call next on middleware")
+		when ODIN_DEBUG {
+			handler_name := handler_names[rawptr(handler.handle)] or_else "UNKNOWN"
+			log.errorf("handler \"%s\" has no next handler", handler_name)
+		} else {
+			log.error("failed to call next on handler middleware")
+		}
+
 		http.respond(res, http.Status.Internal_Server_Error)
 		return
 	}
@@ -42,16 +56,23 @@ use_middleware_handlers :: proc(handler: http.Handle_Proc) -> http.Handler {
 	return http.middleware_proc(inner, secret_middleware_handler)
 }
 
-register_post_handler :: proc(router: ^http.Router, namespace: string, endpoint: string, handler: http.Handle_Proc) {
+register_post_handler :: proc(router: ^http.Router, namespace: string, endpoint: string, handler: http.Handle_Proc, handler_name := #caller_expression(handler)) {
 	route := build_namespace_route(namespace, endpoint)
-	log.info(fmt.tprintf("registering route: %s", route))
+	log.infof("registering route: %s", route)
 
 	middleware_handler := use_middleware_handlers(handler)
 	http.route_post(router, route, middleware_handler)
+
+	when ODIN_DEBUG {
+		// registers the handler name with its rawptr so we can track it down later
+		register_handler_name(middleware_handler.handle, handler_name)
+	}
 }
 
 register_handlers :: proc(router: ^http.Router) {
-	register_waha_handlers(router)
+	register_post_handler(router, waha.WAHA_NAMESPACE, "event", waha.event_handler)
+	register_post_handler(router, waha.WAHA_NAMESPACE, "send-message", waha.send_message_handler)
+	register_post_handler(router, waha.WAHA_NAMESPACE, "recent-messages", waha.recent_messages_handler)
 }
 
 index_handler :: proc(req: ^http.Request, res: ^http.Response) {
