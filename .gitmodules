@@ -1,3 +1,3 @@
-[submodule "deps/odin-http"]
-	path = deps/odin-http
-	url = https://github.com/laytan/odin-http.git
+[submodule "web/civetweb"]
+	path = http/civetweb
+	url = https://github.com/civetweb/civetweb

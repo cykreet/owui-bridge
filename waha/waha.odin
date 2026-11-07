@@ -1,45 +1,69 @@
 package waha
 
+import "core:fmt"
 import "core:encoding/json"
 import "core:log"
 import "core:mem"
 
 import http "deps:odin-http"
 
-TWELVE_KB				:: mem.Kilobyte * 12
+TWELVE_KB					:: mem.Kilobyte * 12
 
-WAHA_NAMESPACE 			:: "waha"
+WAHA_NAMESPACE 				:: "waha"
 
-WAHA_BASE				:: "http://localhost:3999"
-WAHA_SEND_TEXT_ENDPOINT :: "/api/sendText"
+WAHA_BASE					:: "http://localhost:3999"
+WAHA_SEND_TEXT_ENDPOINT		:: "/api/sendText"
 
 Waha_Event_Meta :: struct($P: typeid) {
-	id:				string,
-	event:			string,
-	timestamp:		i64,
-	session:		string,
-	payload:		P,
+	id:						string,
+	event:					string,
+	timestamp:				i64,
+	session:				string,
+	payload:				P,
 }
 
 Waha_Event_Kind :: struct {
-	event:			string,
+	event:					string,
 }
 
 Waha_Event_Message_Payload :: struct {
-	id:				string,
-	timestamp:		i64,
-	from:			string,
-	from_me:		bool		`json:"fromMe"`,
-	source:			string,
-	to:				string,
-	body:			string,
-	has_media:		bool		`json:"hasMedia"`,
-	ack:			i8,
+	id:						string,
+	timestamp:				i64,
+	from:					string,
+	from_me:				bool		`json:"fromMe"`,
+	source:					string,
+	to:						string,
+	body:					string,
+	has_media:				bool		`json:"hasMedia"`,
+	ack:					i8,
+}
+
+Waha_Chat_Id :: struct {
+	chat_id:				string		`json:"chatId"`,
 }
 
 Waha_Send_Text_Payload :: struct {
-	chat_id:		string		`json:"chatId"`,
-	text:			string,
+	using chat_id:			Waha_Chat_Id,
+	text:					string,
+}
+
+Waha_Set_Presence_Body :: struct {
+	using chat_id:			Waha_Chat_Id,
+	presence:				string,
+}
+
+// chat_map(?) -- store user chat id pairs with timestampts to then revalidate/expire
+// previous chat sessions
+
+// build the WAHA presence endpoint using the temp allocator
+build_presence_endpoint :: proc(session_id: string) -> string {
+	return fmt.tprintf("/api/%s/presence", session_id)
+}
+
+send_presence :: proc() {
+	// todo: tried using odin-http, not really being maintained, some weird memory leak quirks.
+	// thinking of building on bindings for https://github.com/civetweb/civetweb
+	// and vendor:curl for requests
 }
 
 on_message :: proc(ev: Waha_Event_Meta(Waha_Event_Message_Payload)) {

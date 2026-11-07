@@ -5,7 +5,7 @@
 		{ "name": "vendor", "path": "/home/linuxbrew/.linuxbrew/Cellar/odin/2026-10_1/libexec/vendor" },
 		{ "name": "shared", "path": "/home/linuxbrew/.linuxbrew/Cellar/odin/2026-10_1/libexec/shared" },
 		{ "name": "base", "path": "/home/linuxbrew/.linuxbrew/Cellar/odin/2026-10_1/libexec/base" },
-		{ "name": "deps", "path": "/home/jaden/projects/owui-bridge/deps" },
+		{ "name": "deps", "path": "/home/jaden/projects/owui-bridge/deps" }
 	],
 	"enable_semantic_tokens": false,
 	"enable_document_symbols": true,

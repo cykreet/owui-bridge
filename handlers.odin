@@ -1,5 +1,7 @@
 package owui_bridge
 
+WAHA_SUPPORT :: #config(WAHA_SUPPORT, false)
+
 import "core:fmt"
 import "core:log"
 
@@ -17,6 +19,9 @@ when ODIN_DEBUG {
 }
 
 next_handler :: proc(handler: ^http.Handler, req: ^http.Request, res: ^http.Response) {
+	// ensure we free temp allocations regardless of early returns
+	defer free_all(context.temp_allocator)
+
 	next, ok := handler.next.?
 	if !ok {
 		when ODIN_DEBUG {
@@ -31,7 +36,6 @@ next_handler :: proc(handler: ^http.Handler, req: ^http.Request, res: ^http.Resp
 	}
 
 	next.handle(next, req, res)
-	free_all(context.temp_allocator)
 }
 
 secret_middleware_handler :: proc(handler: ^http.Handler, req: ^http.Request, res: ^http.Response) {
@@ -64,15 +68,17 @@ register_post_handler :: proc(router: ^http.Router, namespace: string, endpoint:
 	http.route_post(router, route, middleware_handler)
 
 	when ODIN_DEBUG {
-		// registers the handler name with its rawptr so we can track it down later
+		// stores the handler name with its rawptr so we can track it down later
 		register_handler_name(middleware_handler.handle, handler_name)
 	}
 }
 
 register_handlers :: proc(router: ^http.Router) {
-	register_post_handler(router, waha.WAHA_NAMESPACE, "event", waha.event_handler)
-	register_post_handler(router, waha.WAHA_NAMESPACE, "send-message", waha.send_message_handler)
-	register_post_handler(router, waha.WAHA_NAMESPACE, "recent-messages", waha.recent_messages_handler)
+	when WAHA_SUPPORT {
+		register_post_handler(router, waha.WAHA_NAMESPACE, "event", waha.event_handler)
+		register_post_handler(router, waha.WAHA_NAMESPACE, "send-message", waha.send_message_handler)
+		register_post_handler(router, waha.WAHA_NAMESPACE, "recent-messages", waha.recent_messages_handler)
+	}
 }
 
 index_handler :: proc(req: ^http.Request, res: ^http.Response) {
